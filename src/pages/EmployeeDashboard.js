@@ -59,7 +59,7 @@ function EmployeeDashboard() {
 
   const handleEdit = (timesheet) => {
     setFormData({
-      date: timesheet.date,
+      date: timesheet.date.split('T')[0],
       hours: timesheet.hours.toString(),
       notes: timesheet.notes || ''
     });
@@ -319,7 +319,11 @@ function EmployeeDashboard() {
                         <div>
                           <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Date</div>
                           <div style={{ fontSize: '15px', fontWeight: '600', color: '#1a1a2e' }}>
-                            {new Date(ts.date).toLocaleDateString()}
+                            {new Date(ts.date + 'T00:00:00').toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit'
+                            })}
                           </div>
                         </div>
                         <div>
