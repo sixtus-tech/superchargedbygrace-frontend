@@ -20,6 +20,15 @@ function AdminDashboard() {
     role: 'Caregiver'
   });
 
+  // Edit timesheet state
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    date: '',
+    hours: '',
+    notes: ''
+  });
+
   const loadData = useCallback(async () => {
     try {
       const params = {};
@@ -52,6 +61,37 @@ function AdminDashboard() {
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
+  };
+
+  const handleEditTimesheet = (timesheet) => {
+    setEditFormData({
+      date: timesheet.date.split('T')[0],
+      hours: timesheet.hours.toString(),
+      notes: timesheet.notes || ''
+    });
+    setEditingId(timesheet.id);
+    setShowEditForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleUpdateTimesheet = async (e) => {
+    e.preventDefault();
+    try {
+      await timesheetsAPI.update(editingId, editFormData);
+      showNotification('Timesheet updated successfully!');
+      setShowEditForm(false);
+      setEditingId(null);
+      setEditFormData({ date: '', hours: '', notes: '' });
+      loadData();
+    } catch (error) {
+      showNotification('Error: ' + (error.response?.data?.error || error.message), 'error');
+    }
+  };
+
+  const cancelEdit = () => {
+    setShowEditForm(false);
+    setEditingId(null);
+    setEditFormData({ date: '', hours: '', notes: '' });
   };
 
   const handleDeleteTimesheet = async (id) => {
@@ -569,10 +609,11 @@ function AdminDashboard() {
                 }}
               >
                 <option value="all">All Time</option>
-                <option value="2024-12">December 2024</option>
-                <option value="2024-11">November 2024</option>
-                <option value="2024-10">October 2024</option>
-                <option value="2024-09">September 2024</option>
+                <option value="2026-01">January 2026</option>
+                <option value="2025-12">December 2025</option>
+                <option value="2025-11">November 2025</option>
+                <option value="2025-10">October 2025</option>
+                <option value="2025-09">September 2025</option>
               </select>
 
               <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -678,92 +719,200 @@ function AdminDashboard() {
 
         {/* Timesheets Tab */}
         {activeTab === 'timesheets' && (
-          <div style={{
-            background: 'rgba(255,255,255,0.08)',
-            backdropFilter: 'blur(10px)',
-            borderRadius: '16px',
-            border: '1px solid rgba(255,255,255,0.1)',
-            overflow: 'hidden'
-          }}>
-            <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '700', margin: 0 }}>All Timesheet Entries ({timesheets.length})</h3>
-            </div>
-
-            {timesheets.length === 0 ? (
-              <div style={{ padding: '64px 24px', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
-                <p style={{ fontSize: '16px', margin: 0 }}>No entries found</p>
-              </div>
-            ) : (
-              <div style={{ padding: '24px' }}>
-                {timesheets.sort((a, b) => new Date(b.date) - new Date(a.date)).map((ts, idx) => (
-                  <div key={ts.id} style={{
-                    padding: '20px',
-                    background: 'rgba(255,255,255,0.05)',
-                    borderRadius: '12px',
-                    marginBottom: idx < timesheets.length - 1 ? '12px' : 0,
-                    border: '1px solid rgba(255,255,255,0.1)'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', flexWrap: 'wrap', gap: '16px' }}>
-                      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', flex: 1 }}>
-                        <div>
-                          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Employee</div>
-                          <div style={{ fontSize: '15px', fontWeight: '600' }}>{ts.employee_name}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Date</div>
-                          <div style={{ fontSize: '15px', fontWeight: '600' }}>{new Date(ts.date).toLocaleDateString()}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Hours</div>
-                          <div style={{ fontSize: '15px', fontWeight: '600' }}>{ts.hours}h</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Client Charge</div>
-                          <div style={{ fontSize: '15px', fontWeight: '700', color: '#667eea' }}>${ts.client_charge}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Employee Pay</div>
-                          <div style={{ fontSize: '15px', fontWeight: '700', color: '#f97316' }}>${ts.employee_pay}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Profit</div>
-                          <div style={{ fontSize: '15px', fontWeight: '700', color: '#22c55e' }}>${ts.profit}</div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteTimesheet(ts.id)}
-                        style={{
-                          padding: '8px',
-                          background: 'transparent',
-                          border: 'none',
-                          color: '#ef4444',
-                          cursor: 'pointer',
-                          borderRadius: '8px',
-                          fontSize: '18px'
-                        }}
-                        title="Delete"
-                      >
-                        🗑️
-                      </button>
+          <>
+            {/* Edit Form */}
+            {showEditForm && (
+              <div style={{
+                background: 'rgba(255,255,255,0.08)',
+                padding: '32px',
+                borderRadius: '16px',
+                marginBottom: '24px',
+                border: '1px solid rgba(255,255,255,0.1)'
+              }}>
+                <h3 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '24px' }}>✏️ Edit Timesheet Entry</h3>
+                <form onSubmit={handleUpdateTimesheet}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Date</label>
+                      <input
+                        type="date"
+                        value={editFormData.date}
+                        onChange={(e) => setEditFormData({ ...editFormData, date: e.target.value })}
+                        required
+                        style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'white', fontSize: '15px' }}
+                      />
                     </div>
-                    {ts.notes && (
-                      <div style={{
-                        fontSize: '14px',
-                        color: 'rgba(255,255,255,0.6)',
-                        fontStyle: 'italic',
-                        marginTop: '12px',
-                        paddingTop: '12px',
-                        borderTop: '1px solid rgba(255,255,255,0.1)'
-                      }}>
-                        {ts.notes}
-                      </div>
-                    )}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Hours</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        value={editFormData.hours}
+                        onChange={(e) => setEditFormData({ ...editFormData, hours: e.target.value })}
+                        required
+                        style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'white', fontSize: '15px' }}
+                      />
+                    </div>
                   </div>
-                ))}
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Notes</label>
+                    <textarea
+                      value={editFormData.notes}
+                      onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                      rows={3}
+                      style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'white', fontSize: '15px', fontFamily: 'inherit', resize: 'vertical' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button
+                      type="submit"
+                      style={{
+                        flex: 1,
+                        padding: '16px',
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '12px',
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      💾 Update Timesheet
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      style={{
+                        padding: '16px 24px',
+                        background: 'rgba(255,255,255,0.1)',
+                        color: 'white',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        borderRadius: '12px',
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ❌ Cancel
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
-          </div>
+
+            {/* Timesheets List */}
+            <div style={{
+              background: 'rgba(255,255,255,0.08)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '16px',
+              border: '1px solid rgba(255,255,255,0.1)',
+              overflow: 'hidden'
+            }}>
+              <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: '700', margin: 0 }}>All Timesheet Entries ({timesheets.length})</h3>
+              </div>
+
+              {timesheets.length === 0 ? (
+                <div style={{ padding: '64px 24px', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
+                  <p style={{ fontSize: '16px', margin: 0 }}>No entries found</p>
+                </div>
+              ) : (
+                <div style={{ padding: '24px' }}>
+                  {timesheets.sort((a, b) => new Date(b.date) - new Date(a.date)).map((ts, idx) => (
+                    <div key={ts.id} style={{
+                      padding: '20px',
+                      background: 'rgba(255,255,255,0.05)',
+                      borderRadius: '12px',
+                      marginBottom: idx < timesheets.length - 1 ? '12px' : 0,
+                      border: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', flexWrap: 'wrap', gap: '16px' }}>
+                        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', flex: 1 }}>
+                          <div>
+                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Employee</div>
+                            <div style={{ fontSize: '15px', fontWeight: '600' }}>{ts.employee_name}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Date</div>
+                            <div style={{ fontSize: '15px', fontWeight: '600' }}>
+                              {new Date(ts.date + 'T00:00:00').toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit'
+                              })}
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Hours</div>
+                            <div style={{ fontSize: '15px', fontWeight: '600' }}>{ts.hours}h</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Client Charge</div>
+                            <div style={{ fontSize: '15px', fontWeight: '700', color: '#667eea' }}>${ts.client_charge}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Employee Pay</div>
+                            <div style={{ fontSize: '15px', fontWeight: '700', color: '#f97316' }}>${ts.employee_pay}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Profit</div>
+                            <div style={{ fontSize: '15px', fontWeight: '700', color: '#22c55e' }}>${ts.profit}</div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => handleEditTimesheet(ts)}
+                            style={{
+                              padding: '8px',
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#667eea',
+                              cursor: 'pointer',
+                              borderRadius: '8px',
+                              fontSize: '18px'
+                            }}
+                            title="Edit"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTimesheet(ts.id)}
+                            style={{
+                              padding: '8px',
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#ef4444',
+                              cursor: 'pointer',
+                              borderRadius: '8px',
+                              fontSize: '18px'
+                            }}
+                            title="Delete"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                      {ts.notes && (
+                        <div style={{
+                          fontSize: '14px',
+                          color: 'rgba(255,255,255,0.6)',
+                          fontStyle: 'italic',
+                          marginTop: '12px',
+                          paddingTop: '12px',
+                          borderTop: '1px solid rgba(255,255,255,0.1)'
+                        }}>
+                          {ts.notes}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         {/* Employees Tab */}
