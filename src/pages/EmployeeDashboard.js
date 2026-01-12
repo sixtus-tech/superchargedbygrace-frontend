@@ -20,12 +20,15 @@ function EmployeeDashboard() {
 
   const loadData = useCallback(async () => {
     try {
-      const [timesheetsRes, statsRes] = await Promise.all([
-        timesheetsAPI.getAll(),
-        timesheetsAPI.getStats()
-      ]);
+      const timesheetsRes = await timesheetsAPI.getAll();
       setTimesheets(timesheetsRes.data);
-      setStats(statsRes.data);
+      
+      // Calculate stats from timesheets instead of separate API call
+      const calculatedStats = {
+        total_entries: timesheetsRes.data.length,
+        total_hours: timesheetsRes.data.reduce((sum, ts) => sum + ts.hours, 0)
+      };
+      setStats(calculatedStats);
     } catch (error) {
       showNotification('Error loading data: ' + error.message, 'error');
     }
