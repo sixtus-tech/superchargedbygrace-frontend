@@ -48,7 +48,7 @@ export const timesheetsAPI = {
   create: (data) => api.post('/timesheets', data),
   update: (id, data) => api.put(`/timesheets/${id}`, data),
   delete: (id) => api.delete(`/timesheets/${id}`),
-  getStats: (params) => api.get('/timesheets/stats/summary', { params }),
+  getStats: (params) => api.get('/timesheets/summary', { params }),
 };
 
 // Employees API
