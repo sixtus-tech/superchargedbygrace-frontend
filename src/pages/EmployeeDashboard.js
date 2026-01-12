@@ -44,7 +44,7 @@ function EmployeeDashboard() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Convert days to hours if needed
+      // Convert days to hours if needed (1 day = 8 hours)
       const hours = formData.entryType === 'days' 
         ? parseFloat(formData.value) * 8 
         : parseFloat(formData.value);
