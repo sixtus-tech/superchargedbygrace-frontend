@@ -109,6 +109,12 @@ function EmployeeDashboard() {
     setShowForm(false);
   };
 
+  // Calculate stats by entry type
+  const dayEntries = timesheets.filter(ts => ts.entry_type === 'days');
+  const hourEntries = timesheets.filter(ts => ts.entry_type === 'hours');
+  const totalDays = dayEntries.reduce((sum, ts) => sum + (ts.hours / 8), 0);
+  const totalHours = hourEntries.reduce((sum, ts) => sum + ts.hours, 0);
+
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
@@ -191,13 +197,25 @@ function EmployeeDashboard() {
           gap: '20px',
           marginBottom: '32px'
         }}>
-          <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #e9d5ff' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <div style={{ width: '40px', height: '40px', background: '#ede9fe', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>⏱️</div>
-              <span style={{ color: '#64748b', fontSize: '14px', fontWeight: '500' }}>Total Hours</span>
+          {totalDays > 0 && (
+            <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #e9d5ff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <div style={{ width: '40px', height: '40px', background: '#ede9fe', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📅</div>
+                <span style={{ color: '#64748b', fontSize: '14px', fontWeight: '500' }}>Total Days</span>
+              </div>
+              <div style={{ fontSize: '32px', fontWeight: '700', color: '#1a1a2e' }}>{totalDays}</div>
             </div>
-            <div style={{ fontSize: '32px', fontWeight: '700', color: '#1a1a2e' }}>{stats?.total_hours || 0}</div>
-          </div>
+          )}
+
+          {totalHours > 0 && (
+            <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #e9d5ff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <div style={{ width: '40px', height: '40px', background: '#ede9fe', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>⏱️</div>
+                <span style={{ color: '#64748b', fontSize: '14px', fontWeight: '500' }}>Total Hours</span>
+              </div>
+              <div style={{ fontSize: '32px', fontWeight: '700', color: '#1a1a2e' }}>{totalHours}h</div>
+            </div>
+          )}
 
           <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #e9d5ff' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
@@ -282,11 +300,6 @@ function EmployeeDashboard() {
                     placeholder={formData.entryType === 'days' ? '1' : '8'}
                     style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none' }}
                   />
-                  {formData.entryType === 'days' && formData.value && (
-                    <div style={{ fontSize: '12px', color: '#667eea', marginTop: '4px', fontWeight: '500' }}>
-                      = {parseFloat(formData.value) * 8} hours
-                    </div>
-                  )}
                 </div>
               </div>
 
