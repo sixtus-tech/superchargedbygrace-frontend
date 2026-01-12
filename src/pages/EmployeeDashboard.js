@@ -197,25 +197,21 @@ function EmployeeDashboard() {
           gap: '20px',
           marginBottom: '32px'
         }}>
-          {totalDays > 0 && (
-            <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #e9d5ff' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                <div style={{ width: '40px', height: '40px', background: '#ede9fe', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📅</div>
-                <span style={{ color: '#64748b', fontSize: '14px', fontWeight: '500' }}>Total Days</span>
-              </div>
-              <div style={{ fontSize: '32px', fontWeight: '700', color: '#1a1a2e' }}>{totalDays}</div>
+          <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #e9d5ff' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <div style={{ width: '40px', height: '40px', background: '#ede9fe', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📅</div>
+              <span style={{ color: '#64748b', fontSize: '14px', fontWeight: '500' }}>Total Days</span>
             </div>
-          )}
+            <div style={{ fontSize: '32px', fontWeight: '700', color: '#1a1a2e' }}>{totalDays || 0}</div>
+          </div>
 
-          {totalHours > 0 && (
-            <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #e9d5ff' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                <div style={{ width: '40px', height: '40px', background: '#ede9fe', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>⏱️</div>
-                <span style={{ color: '#64748b', fontSize: '14px', fontWeight: '500' }}>Total Hours</span>
-              </div>
-              <div style={{ fontSize: '32px', fontWeight: '700', color: '#1a1a2e' }}>{totalHours}h</div>
+          <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #e9d5ff' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <div style={{ width: '40px', height: '40px', background: '#ede9fe', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>⏱️</div>
+              <span style={{ color: '#64748b', fontSize: '14px', fontWeight: '500' }}>Total Hours</span>
             </div>
-          )}
+            <div style={{ fontSize: '32px', fontWeight: '700', color: '#1a1a2e' }}>{totalHours || 0}h</div>
+          </div>
 
           <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #e9d5ff' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
@@ -293,7 +289,7 @@ function EmployeeDashboard() {
                   <input
                     type="number"
                     step="0.5"
-                    min="0"
+                    min="0.5"
                     value={formData.value}
                     onChange={(e) => setFormData({ ...formData, value: e.target.value })}
                     required
