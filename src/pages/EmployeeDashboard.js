@@ -13,7 +13,7 @@ function EmployeeDashboard() {
   
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
-    entryType: 'hours', // 'hours' or 'days'
+    entryType: 'hours',
     value: '',
     notes: ''
   });
@@ -52,6 +52,7 @@ function EmployeeDashboard() {
       const submitData = {
         date: formData.date,
         hours: hours,
+        entry_type: formData.entryType,
         notes: formData.notes
       };
 
@@ -70,10 +71,15 @@ function EmployeeDashboard() {
   };
 
   const handleEdit = (timesheet) => {
+    const entryType = timesheet.entry_type || 'hours';
+    const displayValue = entryType === 'days' 
+      ? (timesheet.hours / 8).toString() 
+      : timesheet.hours.toString();
+
     setFormData({
       date: timesheet.date.split('T')[0],
-      entryType: 'hours', // Default to hours when editing
-      value: timesheet.hours.toString(),
+      entryType: entryType,
+      value: displayValue,
       notes: timesheet.notes || ''
     });
     setEditingId(timesheet.id);
@@ -268,7 +274,7 @@ function EmployeeDashboard() {
                   </label>
                   <input
                     type="number"
-                    step={formData.entryType === 'days' ? '0.5' : '0.5'}
+                    step="0.5"
                     min="0"
                     value={formData.value}
                     onChange={(e) => setFormData({ ...formData, value: e.target.value })}
@@ -360,14 +366,14 @@ function EmployeeDashboard() {
                           </div>
                         </div>
                         <div>
-                          <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Hours</div>
+                          <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
+                            {ts.entry_type === 'days' ? 'Days Worked' : 'Hours Worked'}
+                          </div>
                           <div style={{ fontSize: '15px', fontWeight: '600', color: '#1a1a2e' }}>
-                            {ts.hours}h
-                            {ts.hours % 8 === 0 && (
-                              <span style={{ fontSize: '12px', color: '#667eea', marginLeft: '6px' }}>
-                                ({ts.hours / 8} {ts.hours === 8 ? 'day' : 'days'})
-                              </span>
-                            )}
+                            {ts.entry_type === 'days' 
+                              ? `${ts.hours / 8} ${ts.hours === 8 ? 'day' : 'days'}` 
+                              : `${ts.hours}h`
+                            }
                           </div>
                         </div>
                         <div>
