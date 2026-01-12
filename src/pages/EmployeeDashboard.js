@@ -13,7 +13,8 @@ function EmployeeDashboard() {
   
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
-    hours: '',
+    entryType: 'hours', // 'hours' or 'days'
+    value: '',
     notes: ''
   });
 
@@ -43,11 +44,22 @@ function EmployeeDashboard() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Convert days to hours if needed
+      const hours = formData.entryType === 'days' 
+        ? parseFloat(formData.value) * 8 
+        : parseFloat(formData.value);
+
+      const submitData = {
+        date: formData.date,
+        hours: hours,
+        notes: formData.notes
+      };
+
       if (editingId) {
-        await timesheetsAPI.update(editingId, formData);
+        await timesheetsAPI.update(editingId, submitData);
         showNotification('Timesheet updated successfully!');
       } else {
-        await timesheetsAPI.create(formData);
+        await timesheetsAPI.create(submitData);
         showNotification('Timesheet created successfully!');
       }
       resetForm();
@@ -60,7 +72,8 @@ function EmployeeDashboard() {
   const handleEdit = (timesheet) => {
     setFormData({
       date: timesheet.date.split('T')[0],
-      hours: timesheet.hours.toString(),
+      entryType: 'hours', // Default to hours when editing
+      value: timesheet.hours.toString(),
       notes: timesheet.notes || ''
     });
     setEditingId(timesheet.id);
@@ -82,7 +95,8 @@ function EmployeeDashboard() {
   const resetForm = () => {
     setFormData({
       date: new Date().toISOString().split('T')[0],
-      hours: '',
+      entryType: 'hours',
+      value: '',
       notes: ''
     });
     setEditingId(null);
@@ -237,17 +251,36 @@ function EmployeeDashboard() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>Hours Worked</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>Entry Type</label>
+                  <select
+                    value={formData.entryType}
+                    onChange={(e) => setFormData({ ...formData, entryType: e.target.value, value: '' })}
+                    style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none', cursor: 'pointer', background: 'white' }}
+                  >
+                    <option value="hours">⏱️ Hours</option>
+                    <option value="days">📅 Days</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>
+                    {formData.entryType === 'days' ? 'Number of Days' : 'Hours Worked'}
+                  </label>
                   <input
                     type="number"
-                    step="0.5"
+                    step={formData.entryType === 'days' ? '0.5' : '0.5'}
                     min="0"
-                    value={formData.hours}
-                    onChange={(e) => setFormData({ ...formData, hours: e.target.value })}
+                    value={formData.value}
+                    onChange={(e) => setFormData({ ...formData, value: e.target.value })}
                     required
-                    placeholder="8"
+                    placeholder={formData.entryType === 'days' ? '1' : '8'}
                     style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none' }}
                   />
+                  {formData.entryType === 'days' && formData.value && (
+                    <div style={{ fontSize: '12px', color: '#667eea', marginTop: '4px', fontWeight: '500' }}>
+                      = {parseFloat(formData.value) * 8} hours
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -328,7 +361,14 @@ function EmployeeDashboard() {
                         </div>
                         <div>
                           <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Hours</div>
-                          <div style={{ fontSize: '15px', fontWeight: '600', color: '#1a1a2e' }}>{ts.hours}h</div>
+                          <div style={{ fontSize: '15px', fontWeight: '600', color: '#1a1a2e' }}>
+                            {ts.hours}h
+                            {ts.hours % 8 === 0 && (
+                              <span style={{ fontSize: '12px', color: '#667eea', marginLeft: '6px' }}>
+                                ({ts.hours / 8} {ts.hours === 8 ? 'day' : 'days'})
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div>
                           <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Status</div>
