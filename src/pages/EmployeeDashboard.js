@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { timesheetsAPI } from '../services/api';
+import { timesheetsAPI, housesAPI } from '../services/api';
 
 function EmployeeDashboard() {
   const { user, logout } = useAuth();
   const [timesheets, setTimesheets] = useState([]);
+  const [houses, setHouses] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -15,13 +16,21 @@ function EmployeeDashboard() {
     date: new Date().toISOString().split('T')[0],
     entryType: 'hours',
     value: '',
+    house_id: '',
+    client_charge: '',
+    employee_pay: '',
     notes: ''
   });
 
   const loadData = useCallback(async () => {
     try {
-      const timesheetsRes = await timesheetsAPI.getAll();
+      const [timesheetsRes, housesRes] = await Promise.all([
+        timesheetsAPI.getAll(),
+        housesAPI.getAll()
+      ]);
+      
       setTimesheets(timesheetsRes.data);
+      setHouses(housesRes.data);
       
       // Calculate stats from timesheets instead of separate API call
       const calculatedStats = {
@@ -44,6 +53,25 @@ function EmployeeDashboard() {
     setTimeout(() => setNotification(null), 3000);
   };
 
+  const handleHouseChange = (houseId) => {
+    const selectedHouse = houses.find(h => h.id === parseInt(houseId));
+    if (selectedHouse) {
+      setFormData({
+        ...formData,
+        house_id: houseId,
+        employee_pay: selectedHouse.employee_pay_per_day,
+        client_charge: selectedHouse.client_charge_per_day
+      });
+    } else {
+      setFormData({
+        ...formData,
+        house_id: '',
+        employee_pay: '',
+        client_charge: ''
+      });
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -56,6 +84,9 @@ function EmployeeDashboard() {
         date: formData.date,
         hours: hours,
         entry_type: formData.entryType,
+        house_id: formData.house_id ? parseInt(formData.house_id) : null,
+        client_charge: parseFloat(formData.client_charge),
+        employee_pay: parseFloat(formData.employee_pay),
         notes: formData.notes
       };
 
@@ -83,6 +114,9 @@ function EmployeeDashboard() {
       date: timesheet.date.split('T')[0],
       entryType: entryType,
       value: displayValue,
+      house_id: timesheet.house_id ? timesheet.house_id.toString() : '',
+      client_charge: timesheet.client_charge,
+      employee_pay: timesheet.employee_pay,
       notes: timesheet.notes || ''
     });
     setEditingId(timesheet.id);
@@ -106,6 +140,9 @@ function EmployeeDashboard() {
       date: new Date().toISOString().split('T')[0],
       entryType: 'hours',
       value: '',
+      house_id: '',
+      client_charge: '',
+      employee_pay: '',
       notes: ''
     });
     setEditingId(null);
@@ -263,7 +300,7 @@ function EmployeeDashboard() {
             <form onSubmit={handleSubmit}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>Date</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>Date *</label>
                   <input
                     type="date"
                     value={formData.date}
@@ -274,7 +311,23 @@ function EmployeeDashboard() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>Entry Type</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>House (Optional)</label>
+                  <select
+                    value={formData.house_id}
+                    onChange={(e) => handleHouseChange(e.target.value)}
+                    style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none', cursor: 'pointer', background: 'white' }}
+                  >
+                    <option value="">-- Select House --</option>
+                    {houses.map(house => (
+                      <option key={house.id} value={house.id}>
+                        🏠 {house.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>Entry Type *</label>
                   <select
                     value={formData.entryType}
                     onChange={(e) => setFormData({ ...formData, entryType: e.target.value, value: '' })}
@@ -287,7 +340,7 @@ function EmployeeDashboard() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>
-                    {formData.entryType === 'days' ? 'Number of Days' : 'Hours Worked'}
+                    {formData.entryType === 'days' ? 'Number of Days *' : 'Hours Worked *'}
                   </label>
                   <input
                     type="number"
@@ -297,6 +350,38 @@ function EmployeeDashboard() {
                     onChange={(e) => setFormData({ ...formData, value: e.target.value })}
                     required
                     placeholder={formData.entryType === 'days' ? '1' : '8'}
+                    style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>
+                    Client Charge (per day) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.client_charge}
+                    onChange={(e) => setFormData({ ...formData, client_charge: e.target.value })}
+                    required
+                    placeholder="200"
+                    style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>
+                    Employee Pay (per day) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.employee_pay}
+                    onChange={(e) => setFormData({ ...formData, employee_pay: e.target.value })}
+                    required
+                    placeholder="150"
                     style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none' }}
                   />
                 </div>
@@ -377,6 +462,14 @@ function EmployeeDashboard() {
                             })}
                           </div>
                         </div>
+                        {ts.house_name && (
+                          <div>
+                            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>House</div>
+                            <div style={{ fontSize: '15px', fontWeight: '600', color: '#7c3aed' }}>
+                              🏠 {ts.house_name}
+                            </div>
+                          </div>
+                        )}
                         <div>
                           <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
                             {ts.entry_type === 'days' ? 'Days Worked' : 'Hours Worked'}
