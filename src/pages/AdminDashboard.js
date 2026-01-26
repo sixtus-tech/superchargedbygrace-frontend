@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { timesheetsAPI, employeesAPI, invoicesAPI } from '../services/api';
+import HousesManagement from '../components/HousesManagement';
 
 function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -527,7 +528,8 @@ function AdminDashboard() {
           {[
             { id: 'timesheets', label: '⏰ Timesheets', icon: '⏰' },
             { id: 'overview', label: '📊 Overview', icon: '📊' },
-            { id: 'employees', label: '👥 Employees', icon: '👥' }
+            { id: 'employees', label: '👥 Employees', icon: '👥' },
+            { id: 'houses', label: '🏠 Houses', icon: '🏠' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -547,6 +549,19 @@ function AdminDashboard() {
             </button>
           ))}
         </div>
+
+        {/* Houses Tab */}
+        {activeTab === 'houses' && (
+          <div style={{
+            background: 'rgba(255,255,255,0.08)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '16px',
+            border: '1px solid rgba(255,255,255,0.1)',
+            padding: '32px'
+          }}>
+            <HousesManagement />
+          </div>
+        )}
 
         {/* Overview Tab */}
         {activeTab === 'overview' && (
