@@ -353,38 +353,6 @@ function EmployeeDashboard() {
                     style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none' }}
                   />
                 </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>
-                    Client Charge (per day) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.client_charge}
-                    onChange={(e) => setFormData({ ...formData, client_charge: e.target.value })}
-                    required
-                    placeholder="200"
-                    style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none' }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>
-                    Employee Pay (per day) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.employee_pay}
-                    onChange={(e) => setFormData({ ...formData, employee_pay: e.target.value })}
-                    required
-                    placeholder="150"
-                    style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none' }}
-                  />
-                </div>
               </div>
 
               <div style={{ marginBottom: '20px' }}>
