@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { timesheetsAPI, employeesAPI, invoicesAPI } from '../services/api';
+import { timesheetsAPI, employeesAPI, invoicesAPI, housesAPI } from '../services/api';
 import HousesManagement from '../components/HousesManagement';
 
 function AdminDashboard() {
   const { user, logout } = useAuth();
   const [timesheets, setTimesheets] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [houses, setHouses] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
@@ -18,7 +19,8 @@ function AdminDashboard() {
     name: '',
     email: '',
     password: '',
-    role: 'Caregiver'
+    role: 'Caregiver',
+    house_id: ''
   });
 
   // Edit timesheet state
@@ -40,15 +42,17 @@ function AdminDashboard() {
         params.endDate = `${year}-${month}-${lastDay}`;
       }
 
-      const [timesheetsRes, employeesRes, statsRes] = await Promise.all([
+      const [timesheetsRes, employeesRes, statsRes, housesRes] = await Promise.all([
         timesheetsAPI.getAll(params),
         employeesAPI.getAll(),
-        timesheetsAPI.getStats(params)
+        timesheetsAPI.getStats(params),
+        housesAPI.getAll()
       ]);
 
       setTimesheets(timesheetsRes.data);
       setEmployees(employeesRes.data);
       setStats(statsRes.data);
+      setHouses(housesRes.data);
     } catch (error) {
       showNotification('Error loading data: ' + error.message, 'error');
     }
@@ -109,10 +113,14 @@ function AdminDashboard() {
   const handleCreateEmployee = async (e) => {
     e.preventDefault();
     try {
-      await employeesAPI.create(employeeFormData);
+      const submitData = {
+        ...employeeFormData,
+        house_id: employeeFormData.house_id ? parseInt(employeeFormData.house_id) : undefined
+      };
+      await employeesAPI.create(submitData);
       showNotification('Employee created successfully!');
       setShowEmployeeForm(false);
-      setEmployeeFormData({ name: '', email: '', password: '', role: 'Caregiver' });
+      setEmployeeFormData({ name: '', email: '', password: '', role: 'Caregiver', house_id: '' });
       loadData();
     } catch (error) {
       showNotification('Error: ' + (error.response?.data?.error || error.message), 'error');
@@ -850,6 +858,12 @@ function AdminDashboard() {
                             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Employee</div>
                             <div style={{ fontSize: '15px', fontWeight: '600' }}>{ts.employee_name}</div>
                           </div>
+                          {ts.house_name && (
+                            <div>
+                              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>House</div>
+                              <div style={{ fontSize: '15px', fontWeight: '600', color: '#22c55e' }}>🏠 {ts.house_name}</div>
+                            </div>
+                          )}
                           <div>
                             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Date</div>
                             <div style={{ fontSize: '15px', fontWeight: '600' }}>
@@ -1006,6 +1020,21 @@ function AdminDashboard() {
                         <option value="Administrator">Administrator</option>
                       </select>
                     </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Default House (Optional)</label>
+                      <select
+                        value={employeeFormData.house_id}
+                        onChange={(e) => setEmployeeFormData({ ...employeeFormData, house_id: e.target.value })}
+                        style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'white', fontSize: '15px', cursor: 'pointer' }}
+                      >
+                        <option value="">-- No House --</option>
+                        {houses.map(house => (
+                          <option key={house.id} value={house.id}>
+                            🏠 {house.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <button
                     type="submit"
@@ -1052,16 +1081,30 @@ function AdminDashboard() {
                       <div>
                         <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '4px' }}>{emp.name}</div>
                         <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>{emp.email}</div>
-                        <div style={{
-                          display: 'inline-block',
-                          marginTop: '8px',
-                          padding: '4px 12px',
-                          background: emp.role === 'Administrator' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(102, 126, 234, 0.2)',
-                          borderRadius: '6px',
-                          fontSize: '13px',
-                          fontWeight: '600'
-                        }}>
-                          {emp.role}
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+                          <div style={{
+                            display: 'inline-block',
+                            padding: '4px 12px',
+                            background: emp.role === 'Administrator' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(102, 126, 234, 0.2)',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            fontWeight: '600'
+                          }}>
+                            {emp.role}
+                          </div>
+                          {emp.house_name && (
+                            <div style={{
+                              display: 'inline-block',
+                              padding: '4px 12px',
+                              background: 'rgba(34, 197, 94, 0.2)',
+                              borderRadius: '6px',
+                              fontSize: '13px',
+                              fontWeight: '600',
+                              color: 'rgba(255,255,255,0.9)'
+                            }}>
+                              🏠 {emp.house_name}
+                            </div>
+                          )}
                         </div>
                       </div>
                       {emp.id !== user.id && (
