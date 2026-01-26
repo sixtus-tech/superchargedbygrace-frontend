@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { housesAPI } from '../services/api';
 
 function HousesManagement() {
@@ -19,9 +19,9 @@ function HousesManagement() {
 
   useEffect(() => {
     loadHouses();
-  }, []);
+  }, [loadHouses]);
 
-  const loadHouses = async () => {
+  const loadHouses = useCallback(async () => {
     try {
       const response = await housesAPI.getAll();
       setHouses(response.data);
@@ -29,7 +29,7 @@ function HousesManagement() {
       showNotification('Error loading houses: ' + error.message, 'error');
     }
     setLoading(false);
-  };
+  }, []);
 
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
