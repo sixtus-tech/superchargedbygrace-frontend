@@ -68,4 +68,13 @@ export const invoicesAPI = {
   getComprehensive: (params) => api.get('/invoices/comprehensive', { params }),
 };
 
+// Houses API
+export const housesAPI = {
+  getAll: () => api.get('/houses'),
+  getOne: (id) => api.get(`/houses/${id}`),
+  create: (data) => api.post('/houses', data),
+  update: (id, data) => api.put(`/houses/${id}`, data),
+  delete: (id) => api.delete(`/houses/${id}`),
+};
+
 export default api;
