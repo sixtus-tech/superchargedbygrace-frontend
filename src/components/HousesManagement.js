@@ -17,9 +17,10 @@ function HousesManagement() {
     notes: ''
   });
 
-  useEffect(() => {
-    loadHouses();
-  }, [loadHouses]);
+  const showNotification = useCallback((message, type = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  }, []);
 
   const loadHouses = useCallback(async () => {
     try {
@@ -29,12 +30,11 @@ function HousesManagement() {
       showNotification('Error loading houses: ' + error.message, 'error');
     }
     setLoading(false);
-  }, []);
+  }, [showNotification]);
 
-  const showNotification = (message, type = 'success') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
-  };
+  useEffect(() => {
+    loadHouses();
+  }, [loadHouses]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
