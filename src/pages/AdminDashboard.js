@@ -12,6 +12,7 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState('all');
+  const [selectedHouse, setSelectedHouse] = useState('all');
   const [activeTab, setActiveTab] = useState('timesheets');
   
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
@@ -164,23 +165,48 @@ function AdminDashboard() {
         params.endDate = `${year}-${month}-${lastDay}`;
       }
 
-      const response = await invoicesAPI.getClientInvoice(params);
-      const invoice = response.data;
+      // Get timesheets
+      const timesheetsRes = await timesheetsAPI.getAll(params);
+      let filteredTimesheets = timesheetsRes.data;
 
-      // Group by employee (caregiver)
+      // Filter by house if selected
+      if (selectedHouse !== 'all') {
+        filteredTimesheets = filteredTimesheets.filter(ts => ts.house_id === parseInt(selectedHouse));
+      }
+
+      if (filteredTimesheets.length === 0) {
+        showNotification('No timesheets found for selected filters', 'error');
+        return;
+      }
+
+      // Get house name for title
+      const selectedHouseName = selectedHouse !== 'all' 
+        ? houses.find(h => h.id === parseInt(selectedHouse))?.name 
+        : 'All Houses';
+
+      // Group by employee
       const employeeGroups = {};
-      invoice.entries.forEach(entry => {
-        if (!employeeGroups[entry.caregiver]) {
-          employeeGroups[entry.caregiver] = {
-            fullDays: 0,
-            halfDays: 0
+      let totalRevenue = 0;
+      let totalDays = 0;
+      let totalHours = 0;
+
+      filteredTimesheets.forEach(ts => {
+        if (!employeeGroups[ts.employee_name]) {
+          employeeGroups[ts.employee_name] = {
+            days: 0,
+            hours: 0,
+            total: 0
           };
         }
-        if (entry.service_type === 'Full Day') {
-          employeeGroups[entry.caregiver].fullDays++;
+        if (ts.entry_type === 'days') {
+          employeeGroups[ts.employee_name].days += ts.hours / 8;
+          totalDays += ts.hours / 8;
         } else {
-          employeeGroups[entry.caregiver].halfDays++;
+          employeeGroups[ts.employee_name].hours += ts.hours;
+          totalHours += ts.hours;
         }
+        employeeGroups[ts.employee_name].total += ts.client_charge;
+        totalRevenue += ts.client_charge;
       });
 
       const jsPDF = await loadJsPDF();
@@ -195,37 +221,55 @@ function AdminDashboard() {
       doc.setTextColor(100);
       doc.text('Client Invoice', 105, 30, { align: 'center' });
 
+      // House name
+      if (selectedHouse !== 'all') {
+        doc.setFontSize(12);
+        doc.setTextColor(102, 126, 234);
+        doc.text(`🏠 ${selectedHouseName}`, 105, 38, { align: 'center' });
+      }
+
       // Invoice Info
       doc.setFontSize(10);
       doc.setTextColor(60);
-      doc.text(`Invoice Date: ${new Date().toLocaleDateString()}`, 20, 45);
+      doc.text(`Invoice Date: ${new Date().toLocaleDateString()}`, 20, 50);
+      if (selectedMonth !== 'all') {
+        const [year, month] = selectedMonth.split('-');
+        const monthName = new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        doc.text(`Period: ${monthName}`, 20, 57);
+      }
 
       // Billing Summary Box
       doc.setFillColor(248, 249, 255);
-      doc.rect(20, 55, 170, 45, 'F');
+      doc.rect(20, 65, 170, 45, 'F');
       
       doc.setFontSize(12);
       doc.setTextColor(102, 126, 234);
-      doc.text('Billing Summary', 25, 65);
+      doc.text('Billing Summary', 25, 75);
 
       doc.setFontSize(10);
       doc.setTextColor(60);
-      doc.text(`Full Days (${invoice.summary.full_days})`, 25, 75);
-      doc.text(`$${invoice.summary.full_days_total}`, 170, 75, { align: 'right' });
-
-      doc.text(`Half Days (${invoice.summary.half_days})`, 25, 83);
-      doc.text(`$${invoice.summary.half_days_total}`, 170, 83, { align: 'right' });
+      
+      let summaryY = 85;
+      if (totalDays > 0) {
+        doc.text(`Total Days: ${totalDays}`, 25, summaryY);
+        summaryY += 8;
+      }
+      if (totalHours > 0) {
+        doc.text(`Total Hours: ${totalHours}`, 25, summaryY);
+        summaryY += 8;
+      }
+      doc.text(`Total Entries: ${filteredTimesheets.length}`, 25, summaryY);
 
       doc.setLineWidth(0.5);
-      doc.line(25, 88, 185, 88);
+      doc.line(25, 103, 185, 103);
 
       doc.setFontSize(12);
       doc.setTextColor(102, 126, 234);
-      doc.text('Total Amount Due', 25, 95);
-      doc.text(`$${invoice.summary.total_amount}`, 170, 95, { align: 'right' });
+      doc.text('Total Amount Due', 25, 108);
+      doc.text(`$${totalRevenue.toFixed(2)}`, 170, 108, { align: 'right' });
 
       // Service Details
-      let yPos = 115;
+      let yPos = 125;
       doc.setFontSize(12);
       doc.setTextColor(102, 126, 234);
       doc.text('Service Details by Caregiver', 20, yPos);
@@ -234,7 +278,7 @@ function AdminDashboard() {
       doc.setFontSize(10);
       doc.setTextColor(60);
 
-      Object.entries(employeeGroups).forEach(([caregiver, days]) => {
+      Object.entries(employeeGroups).forEach(([employeeName, empData]) => {
         if (yPos > 260) {
           doc.addPage();
           yPos = 20;
@@ -242,23 +286,26 @@ function AdminDashboard() {
 
         doc.setDrawColor(224, 224, 224);
         doc.setFillColor(255, 255, 255);
-        doc.rect(20, yPos - 5, 170, 20, 'FD');
+        doc.rect(20, yPos - 5, 170, 25, 'FD');
 
         doc.setFont(undefined, 'bold');
-        doc.text(caregiver, 25, yPos);
+        doc.text(employeeName, 25, yPos);
         doc.setFont(undefined, 'normal');
 
         yPos += 7;
-        if (days.fullDays > 0) {
-          doc.text(`${days.fullDays} Full Day${days.fullDays > 1 ? 's' : ''}`, 30, yPos);
+        if (empData.days > 0) {
+          doc.text(`${empData.days} day${empData.days !== 1 ? 's' : ''}`, 30, yPos);
           yPos += 6;
         }
-        if (days.halfDays > 0) {
-          doc.text(`${days.halfDays} Half Day${days.halfDays > 1 ? 's' : ''}`, 30, yPos);
+        if (empData.hours > 0) {
+          doc.text(`${empData.hours} hour${empData.hours !== 1 ? 's' : ''}`, 30, yPos);
           yPos += 6;
         }
+        doc.setFont(undefined, 'bold');
+        doc.text(`Subtotal: $${empData.total.toFixed(2)}`, 30, yPos);
+        doc.setFont(undefined, 'normal');
 
-        yPos += 8;
+        yPos += 12;
       });
 
       // Footer
@@ -269,9 +316,14 @@ function AdminDashboard() {
         doc.setTextColor(150);
         doc.text('Payment Terms: Net 30 Days', 105, 280, { align: 'center' });
         doc.text('Thank you for your business!', 105, 285, { align: 'center' });
+        doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
       }
 
-      doc.save(`client-invoice-${selectedMonth}-${Date.now()}.pdf`);
+      const filename = selectedHouse !== 'all'
+        ? `invoice-${selectedHouseName.replace(/\s+/g, '-')}-${selectedMonth}-${Date.now()}.pdf`
+        : `invoice-all-houses-${selectedMonth}-${Date.now()}.pdf`;
+
+      doc.save(filename);
       showNotification('Client invoice PDF downloaded!');
     } catch (error) {
       showNotification('Error generating invoice: ' + error.message, 'error');
@@ -291,7 +343,55 @@ function AdminDashboard() {
       }
 
       const response = await invoicesAPI.getPayrollReport(params);
-      const report = response.data;
+      let report = response.data;
+
+      // Filter by house if selected
+      if (selectedHouse !== 'all') {
+        const timesheetsRes = await timesheetsAPI.getAll(params);
+        const filteredTimesheets = timesheetsRes.data.filter(ts => ts.house_id === parseInt(selectedHouse));
+        
+        if (filteredTimesheets.length === 0) {
+          showNotification('No timesheets found for selected filters', 'error');
+          return;
+        }
+
+        // Recalculate report for filtered timesheets
+        const employeeBreakdown = {};
+        filteredTimesheets.forEach(ts => {
+          if (!employeeBreakdown[ts.employee_name]) {
+            employeeBreakdown[ts.employee_name] = {
+              employee_name: ts.employee_name,
+              total_hours: 0,
+              total_pay: 0,
+              entries: 0
+            };
+          }
+          employeeBreakdown[ts.employee_name].total_hours += ts.hours;
+          employeeBreakdown[ts.employee_name].total_pay += ts.employee_pay;
+          employeeBreakdown[ts.employee_name].entries += 1;
+        });
+
+        report = {
+          period: report.period,
+          summary: {
+            total_entries: filteredTimesheets.length,
+            total_hours: filteredTimesheets.reduce((sum, ts) => sum + ts.hours, 0),
+            total_payroll: filteredTimesheets.reduce((sum, ts) => sum + ts.employee_pay, 0)
+          },
+          employee_breakdown: Object.values(employeeBreakdown),
+          entries: filteredTimesheets.map(ts => ({
+            date: ts.date,
+            employee: ts.employee_name,
+            hours: ts.hours,
+            pay: ts.employee_pay,
+            rate_type: ts.entry_type === 'days' ? `${ts.hours / 8}-day` : `${ts.hours}-hour`
+          }))
+        };
+      }
+
+      const selectedHouseName = selectedHouse !== 'all' 
+        ? houses.find(h => h.id === parseInt(selectedHouse))?.name 
+        : 'All Houses';
 
       const jsPDF = await loadJsPDF();
       const doc = new jsPDF();
@@ -305,38 +405,45 @@ function AdminDashboard() {
       doc.setTextColor(100);
       doc.text('Employee Payroll Report', 105, 30, { align: 'center' });
 
+      // House name
+      if (selectedHouse !== 'all') {
+        doc.setFontSize(12);
+        doc.setTextColor(249, 115, 22);
+        doc.text(`🏠 ${selectedHouseName}`, 105, 38, { align: 'center' });
+      }
+
       // Report Info
       doc.setFontSize(10);
       doc.setTextColor(60);
-      doc.text(`Report Date: ${new Date().toLocaleDateString()}`, 20, 45);
-      doc.text(`Period: ${report.period.start} to ${report.period.end}`, 20, 52);
+      doc.text(`Report Date: ${new Date().toLocaleDateString()}`, 20, 50);
+      doc.text(`Period: ${report.period.start} to ${report.period.end}`, 20, 57);
 
       // Payroll Summary Box
       doc.setFillColor(255, 247, 237);
-      doc.rect(20, 60, 170, 45, 'F');
+      doc.rect(20, 65, 170, 45, 'F');
       
       doc.setFontSize(12);
       doc.setTextColor(249, 115, 22);
-      doc.text('Payroll Summary', 25, 70);
+      doc.text('Payroll Summary', 25, 75);
 
       doc.setFontSize(10);
       doc.setTextColor(60);
-      doc.text(`Total Entries`, 25, 80);
-      doc.text(`${report.summary.total_entries}`, 170, 80, { align: 'right' });
+      doc.text(`Total Entries`, 25, 85);
+      doc.text(`${report.summary.total_entries}`, 170, 85, { align: 'right' });
 
-      doc.text(`Total Hours`, 25, 88);
-      doc.text(`${report.summary.total_hours}h`, 170, 88, { align: 'right' });
+      doc.text(`Total Hours`, 25, 93);
+      doc.text(`${report.summary.total_hours}h`, 170, 93, { align: 'right' });
 
       doc.setLineWidth(0.5);
-      doc.line(25, 93, 185, 93);
+      doc.line(25, 98, 185, 98);
 
       doc.setFontSize(12);
       doc.setTextColor(249, 115, 22);
-      doc.text('Total Payroll', 25, 100);
-      doc.text(`$${report.summary.total_payroll}`, 170, 100, { align: 'right' });
+      doc.text('Total Payroll', 25, 105);
+      doc.text(`$${report.summary.total_payroll}`, 170, 105, { align: 'right' });
 
       // Employee Breakdown
-      let yPos = 120;
+      let yPos = 125;
       doc.setFontSize(12);
       doc.setTextColor(249, 115, 22);
       doc.text('Employee Breakdown', 20, yPos);
@@ -444,7 +551,11 @@ function AdminDashboard() {
         doc.text(`Total Payroll: $${report.summary.total_payroll}`, 105, 285, { align: 'center' });
       }
 
-      doc.save(`payroll-report-${selectedMonth}-${Date.now()}.pdf`);
+      const filename = selectedHouse !== 'all'
+        ? `payroll-${selectedHouseName.replace(/\s+/g, '-')}-${selectedMonth}-${Date.now()}.pdf`
+        : `payroll-all-houses-${selectedMonth}-${Date.now()}.pdf`;
+
+      doc.save(filename);
       showNotification('Payroll report PDF downloaded!');
     } catch (error) {
       showNotification('Error generating report: ' + error.message, 'error');
@@ -637,6 +748,28 @@ function AdminDashboard() {
                 <option value="2025-11">November 2025</option>
                 <option value="2025-10">October 2025</option>
                 <option value="2025-09">September 2025</option>
+              </select>
+
+              <select
+                value={selectedHouse}
+                onChange={(e) => setSelectedHouse(e.target.value)}
+                style={{
+                  padding: '12px 16px',
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '10px',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="all">All Houses</option>
+                {houses.map(house => (
+                  <option key={house.id} value={house.id}>
+                    🏠 {house.name}
+                  </option>
+                ))}
               </select>
 
               <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
