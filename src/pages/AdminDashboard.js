@@ -190,8 +190,6 @@ function AdminDashboard() {
       // Group by employee
       const employeeGroups = {};
       let totalRevenue = 0;
-      let totalDays = 0;
-      let totalHours = 0;
 
       filteredTimesheets.forEach(ts => {
         if (!employeeGroups[ts.employee_name]) {
@@ -213,10 +211,8 @@ function AdminDashboard() {
         
         if (ts.entry_type === 'days') {
           employeeGroups[ts.employee_name].days += ts.hours / 8;
-          totalDays += ts.hours / 8;
         } else {
           employeeGroups[ts.employee_name].hours += ts.hours;
-          totalHours += ts.hours;
         }
         employeeGroups[ts.employee_name].total += ts.client_charge;
         totalRevenue += ts.client_charge;
