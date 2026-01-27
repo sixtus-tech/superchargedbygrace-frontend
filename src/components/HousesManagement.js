@@ -26,10 +26,11 @@ function HousesManagement() {
     try {
       const response = await housesAPI.getAll();
       setHouses(response.data);
+      setLoading(false);
     } catch (error) {
       showNotification('Error loading houses: ' + error.message, 'error');
+      setLoading(false);
     }
-    setLoading(false);
   }, [showNotification]);
 
   useEffect(() => {
@@ -52,7 +53,6 @@ function HousesManagement() {
         await housesAPI.create(submitData);
         showNotification('House created successfully!');
       }
-      
       resetForm();
       loadHouses();
     } catch (error) {
@@ -71,17 +71,17 @@ function HousesManagement() {
     });
     setEditingId(house.id);
     setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete ${name}?`)) return;
-    
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this house? Employees assigned to this house will be unassigned.')) return;
     try {
       await housesAPI.delete(id);
       showNotification('House deleted successfully!');
       loadHouses();
     } catch (error) {
-      showNotification('Error: ' + (error.response?.data?.error || error.message), 'error');
+      showNotification('Error: ' + error.message, 'error');
     }
   };
 
@@ -99,8 +99,16 @@ function HousesManagement() {
   };
 
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Loading houses...</div>;
+    return (
+      <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.6)' }}>
+        <div style={{ fontSize: '20px' }}>Loading houses...</div>
+      </div>
+    );
   }
+
+  const profitMargin = formData.client_charge_per_day && formData.employee_pay_per_day
+    ? (((parseFloat(formData.client_charge_per_day) - parseFloat(formData.employee_pay_per_day)) / parseFloat(formData.client_charge_per_day)) * 100).toFixed(1)
+    : 0;
 
   return (
     <div>
@@ -121,46 +129,52 @@ function HousesManagement() {
         </div>
       )}
 
-      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a2e', margin: 0 }}>Houses Management</h2>
-        <button
-          onClick={() => showForm ? resetForm() : setShowForm(true)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '12px 24px',
-            background: showForm ? '#94a3b8' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '10px',
-            fontSize: '15px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            boxShadow: showForm ? 'none' : '0 4px 12px rgba(102, 126, 234, 0.3)'
-          }}
-        >
-          {showForm ? '❌ Cancel' : '➕ Add House'}
-        </button>
+      {/* Header */}
+      <div style={{ marginBottom: '32px' }}>
+        <h2 style={{ fontSize: '28px', fontWeight: '700', margin: '0 0 8px 0', color: 'white' }}>🏠 Houses Management</h2>
+        <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>Manage care facilities and their billing rates</p>
       </div>
+
+      {/* Add/Edit Button */}
+      <button
+        onClick={() => showForm ? resetForm() : setShowForm(true)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '14px 28px',
+          background: showForm ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+          color: 'white',
+          border: showForm ? '2px solid rgba(255,255,255,0.2)' : 'none',
+          borderRadius: '12px',
+          fontSize: '15px',
+          fontWeight: '600',
+          cursor: 'pointer',
+          marginBottom: '24px',
+          boxShadow: showForm ? 'none' : '0 4px 12px rgba(34, 197, 94, 0.3)',
+          transition: 'all 0.2s'
+        }}
+      >
+        {showForm ? '❌ Cancel' : '➕ Add New House'}
+      </button>
 
       {/* Add/Edit Form */}
       {showForm && (
         <div style={{
-          background: 'white',
+          background: 'rgba(255,255,255,0.05)',
           padding: '32px',
           borderRadius: '16px',
           marginBottom: '32px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-          border: '1px solid #e9d5ff'
+          border: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
         }}>
-          <h3 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '24px', color: '#1a1a2e' }}>
-            {editingId ? '✏️ Edit House' : '🏠 New House'}
+          <h3 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '24px', color: 'white' }}>
+            {editingId ? '✏️ Edit House' : '➕ Add New House'}
           </h3>
           <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '20px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: 'rgba(255,255,255,0.9)' }}>
                   House Name *
                 </label>
                 <input
@@ -169,82 +183,171 @@ function HousesManagement() {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
                   placeholder="e.g., Frisco, Plano Ambrosia"
-                  style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none' }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '2px solid rgba(255,255,255,0.1)',
+                    borderRadius: '10px',
+                    color: 'white',
+                    fontSize: '15px',
+                    outline: 'none',
+                    transition: 'border 0.2s'
+                  }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: 'rgba(255,255,255,0.9)' }}>
                   Employee Pay (per day) *
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.employee_pay_per_day}
-                  onChange={(e) => setFormData({ ...formData, employee_pay_per_day: e.target.value })}
-                  required
-                  placeholder="150"
-                  style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none' }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.5)', fontSize: '16px', fontWeight: '600' }}>$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.employee_pay_per_day}
+                    onChange={(e) => setFormData({ ...formData, employee_pay_per_day: e.target.value })}
+                    required
+                    placeholder="150.00"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px 12px 32px',
+                      background: 'rgba(255,255,255,0.08)',
+                      border: '2px solid rgba(255,255,255,0.1)',
+                      borderRadius: '10px',
+                      color: 'white',
+                      fontSize: '15px',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: 'rgba(255,255,255,0.9)' }}>
                   Client Charge (per day) *
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.client_charge_per_day}
-                  onChange={(e) => setFormData({ ...formData, client_charge_per_day: e.target.value })}
-                  required
-                  placeholder="200"
-                  style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none' }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.5)', fontSize: '16px', fontWeight: '600' }}>$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.client_charge_per_day}
+                    onChange={(e) => setFormData({ ...formData, client_charge_per_day: e.target.value })}
+                    required
+                    placeholder="200.00"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px 12px 32px',
+                      background: 'rgba(255,255,255,0.08)',
+                      border: '2px solid rgba(255,255,255,0.1)',
+                      borderRadius: '10px',
+                      color: 'white',
+                      fontSize: '15px',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: 'rgba(255,255,255,0.9)' }}>
                   Payment Frequency *
                 </label>
                 <select
                   value={formData.payment_frequency}
                   onChange={(e) => setFormData({ ...formData, payment_frequency: e.target.value })}
-                  style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none', cursor: 'pointer', background: 'white' }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '2px solid rgba(255,255,255,0.1)',
+                    borderRadius: '10px',
+                    color: 'white',
+                    fontSize: '15px',
+                    cursor: 'pointer',
+                    outline: 'none'
+                  }}
                 >
-                  <option value="weekly">Weekly</option>
-                  <option value="bi-weekly">Bi-weekly</option>
-                  <option value="monthly">Monthly</option>
+                  <option value="weekly" style={{ background: '#1a1a2e', color: 'white' }}>Weekly</option>
+                  <option value="bi-weekly" style={{ background: '#1a1a2e', color: 'white' }}>Bi-weekly</option>
+                  <option value="monthly" style={{ background: '#1a1a2e', color: 'white' }}>Monthly</option>
                 </select>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: 'rgba(255,255,255,0.9)' }}>
                   Invoice Style *
                 </label>
                 <select
                   value={formData.invoice_style}
                   onChange={(e) => setFormData({ ...formData, invoice_style: e.target.value })}
-                  style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none', cursor: 'pointer', background: 'white' }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '2px solid rgba(255,255,255,0.1)',
+                    borderRadius: '10px',
+                    color: 'white',
+                    fontSize: '15px',
+                    cursor: 'pointer',
+                    outline: 'none'
+                  }}
                 >
-                  <option value="grouped">Grouped (e.g., John Doe - 5 days)</option>
-                  <option value="daily">Daily (e.g., John Doe - 1/26, 1/27)</option>
+                  <option value="grouped" style={{ background: '#1a1a2e', color: 'white' }}>Grouped</option>
+                  <option value="daily" style={{ background: '#1a1a2e', color: 'white' }}>Daily</option>
                 </select>
               </div>
             </div>
 
+            {/* Profit Margin Display */}
+            {formData.employee_pay_per_day && formData.client_charge_per_day && (
+              <div style={{
+                background: 'rgba(34, 197, 94, 0.1)',
+                border: '1px solid rgba(34, 197, 94, 0.3)',
+                borderRadius: '10px',
+                padding: '16px',
+                marginBottom: '20px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Daily Profit</div>
+                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#22c55e' }}>
+                      ${(parseFloat(formData.client_charge_per_day) - parseFloat(formData.employee_pay_per_day)).toFixed(2)}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Profit Margin</div>
+                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#22c55e' }}>{profitMargin}%</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: 'rgba(255,255,255,0.9)' }}>
                 Notes (Optional)
               </label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Any additional notes about this house..."
+                placeholder="Special instructions, billing details, etc..."
                 rows={3}
-                style={{ width: '100%', padding: '12px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '15px', outline: 'none', fontFamily: 'inherit', resize: 'vertical' }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '2px solid rgba(255,255,255,0.1)',
+                  borderRadius: '10px',
+                  color: 'white',
+                  fontSize: '15px',
+                  fontFamily: 'inherit',
+                  resize: 'vertical',
+                  outline: 'none'
+                }}
               />
             </div>
 
@@ -253,14 +356,14 @@ function HousesManagement() {
               style={{
                 width: '100%',
                 padding: '16px',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '12px',
                 fontSize: '16px',
                 fontWeight: '600',
                 cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+                boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)'
               }}
             >
               {editingId ? '💾 Update House' : '➕ Create House'}
@@ -269,101 +372,149 @@ function HousesManagement() {
         </div>
       )}
 
-      {/* Houses List */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
-        {houses.map(house => (
-          <div
-            key={house.id}
-            style={{
-              background: 'white',
-              padding: '24px',
-              borderRadius: '16px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-              border: '1px solid #e9d5ff'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1a1a2e', margin: 0 }}>
-                🏠 {house.name}
-              </h3>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  onClick={() => handleEdit(house)}
-                  style={{
-                    padding: '6px 12px',
-                    background: '#667eea',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
-                  ✏️ Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(house.id, house.name)}
-                  style={{
-                    padding: '6px 12px',
-                    background: '#ef4444',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
-                  🗑️
-                </button>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gap: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b', fontSize: '14px' }}>Employee Pay:</span>
-                <span style={{ fontWeight: '600', color: '#16a34a' }}>${house.employee_pay_per_day}/day</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b', fontSize: '14px' }}>Client Charge:</span>
-                <span style={{ fontWeight: '600', color: '#2563eb' }}>${house.client_charge_per_day}/day</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b', fontSize: '14px' }}>Profit Margin:</span>
-                <span style={{ fontWeight: '600', color: '#7c3aed' }}>
-                  ${(house.client_charge_per_day - house.employee_pay_per_day).toFixed(2)}/day
-                </span>
-              </div>
-              <div style={{ borderTop: '1px solid #e9d5ff', paddingTop: '12px', marginTop: '4px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ color: '#64748b', fontSize: '14px' }}>Payment:</span>
-                  <span style={{ fontSize: '13px', fontWeight: '600', padding: '4px 8px', borderRadius: '6px', background: '#dbeafe', color: '#2563eb' }}>
-                    {house.payment_frequency}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748b', fontSize: '14px' }}>Invoice Style:</span>
-                  <span style={{ fontSize: '13px', fontWeight: '600', padding: '4px 8px', borderRadius: '6px', background: '#fef3c7', color: '#ca8a04' }}>
-                    {house.invoice_style}
-                  </span>
-                </div>
-              </div>
-              {house.notes && (
-                <div style={{ marginTop: '8px', padding: '12px', background: '#fafafa', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Notes:</div>
-                  <div style={{ fontSize: '14px', color: '#1a1a2e' }}>{house.notes}</div>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {houses.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '64px', color: '#94a3b8' }}>
+      {/* Houses Grid */}
+      {houses.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '64px 24px', color: 'rgba(255,255,255,0.5)' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏠</div>
-          <p style={{ fontSize: '16px', margin: 0 }}>No houses yet. Click "Add House" to create one!</p>
+          <p style={{ fontSize: '16px', margin: 0 }}>No houses yet. Add your first one!</p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+          {houses.map(house => {
+            const profit = house.client_charge_per_day - house.employee_pay_per_day;
+            const margin = ((profit / house.client_charge_per_day) * 100).toFixed(1);
+
+            return (
+              <div
+                key={house.id}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%)',
+                  padding: '24px',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+                }}
+              >
+                {/* House Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '20px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '22px', fontWeight: '700', margin: '0 0 8px 0', color: 'white' }}>
+                      🏠 {house.name}
+                    </h3>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{
+                        padding: '4px 10px',
+                        background: 'rgba(102, 126, 234, 0.2)',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        color: '#667eea',
+                        textTransform: 'capitalize'
+                      }}>
+                        {house.payment_frequency}
+                      </span>
+                      <span style={{
+                        padding: '4px 10px',
+                        background: 'rgba(168, 85, 247, 0.2)',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        color: '#a855f7',
+                        textTransform: 'capitalize'
+                      }}>
+                        {house.invoice_style}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rates */}
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>Employee Pay/Day</span>
+                    <span style={{ fontSize: '18px', fontWeight: '700', color: '#f97316' }}>${house.employee_pay_per_day}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>Client Charge/Day</span>
+                    <span style={{ fontSize: '18px', fontWeight: '700', color: '#667eea' }}>${house.client_charge_per_day}</span>
+                  </div>
+                  <div style={{
+                    borderTop: '1px solid rgba(255,255,255,0.1)',
+                    paddingTop: '10px',
+                    display: 'flex',
+                    justifyContent: 'space-between'
+                  }}>
+                    <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>Profit ({margin}%)</span>
+                    <span style={{ fontSize: '20px', fontWeight: '700', color: '#22c55e' }}>${profit.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {house.notes && (
+                  <div style={{
+                    fontSize: '13px',
+                    color: 'rgba(255,255,255,0.5)',
+                    fontStyle: 'italic',
+                    marginBottom: '16px',
+                    padding: '12px',
+                    background: 'rgba(255,255,255,0.03)',
+                    borderRadius: '8px',
+                    borderLeft: '3px solid rgba(255,255,255,0.2)'
+                  }}>
+                    {house.notes}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+                  <button
+                    onClick={() => handleEdit(house)}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      background: 'rgba(102, 126, 234, 0.2)',
+                      border: '1px solid rgba(102, 126, 234, 0.3)',
+                      borderRadius: '8px',
+                      color: '#667eea',
+                      fontWeight: '600',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(house.id)}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      background: 'rgba(239, 68, 68, 0.2)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: '8px',
+                      color: '#ef4444',
+                      fontWeight: '600',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

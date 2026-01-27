@@ -742,12 +742,12 @@ function AdminDashboard() {
                   cursor: 'pointer'
                 }}
               >
-                <option value="all">All Time</option>
-                <option value="2026-01">January 2026</option>
-                <option value="2025-12">December 2025</option>
-                <option value="2025-11">November 2025</option>
-                <option value="2025-10">October 2025</option>
-                <option value="2025-09">September 2025</option>
+                <option value="all" style={{ background: '#1a1a2e', color: 'white' }}>All Time</option>
+                <option value="2026-01" style={{ background: '#1a1a2e', color: 'white' }}>January 2026</option>
+                <option value="2025-12" style={{ background: '#1a1a2e', color: 'white' }}>December 2025</option>
+                <option value="2025-11" style={{ background: '#1a1a2e', color: 'white' }}>November 2025</option>
+                <option value="2025-10" style={{ background: '#1a1a2e', color: 'white' }}>October 2025</option>
+                <option value="2025-09" style={{ background: '#1a1a2e', color: 'white' }}>September 2025</option>
               </select>
 
               <select
@@ -764,9 +764,9 @@ function AdminDashboard() {
                   cursor: 'pointer'
                 }}
               >
-                <option value="all">All Houses</option>
+                <option value="all" style={{ background: '#1a1a2e', color: 'white' }}>All Houses</option>
                 {houses.map(house => (
-                  <option key={house.id} value={house.id}>
+                  <option key={house.id} value={house.id} style={{ background: '#1a1a2e', color: 'white' }}>
                     🏠 {house.name}
                   </option>
                 ))}
@@ -1149,8 +1149,8 @@ function AdminDashboard() {
                         onChange={(e) => setEmployeeFormData({ ...employeeFormData, role: e.target.value })}
                         style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'white', fontSize: '15px', cursor: 'pointer' }}
                       >
-                        <option value="Caregiver">Caregiver</option>
-                        <option value="Administrator">Administrator</option>
+                        <option value="Caregiver" style={{ background: '#1a1a2e', color: 'white' }}>Caregiver</option>
+                        <option value="Administrator" style={{ background: '#1a1a2e', color: 'white' }}>Administrator</option>
                       </select>
                     </div>
                     <div>
@@ -1160,9 +1160,9 @@ function AdminDashboard() {
                         onChange={(e) => setEmployeeFormData({ ...employeeFormData, house_id: e.target.value })}
                         style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'white', fontSize: '15px', cursor: 'pointer' }}
                       >
-                        <option value="">-- No House --</option>
+                        <option value="" style={{ background: '#1a1a2e', color: 'white' }}>-- No House --</option>
                         {houses.map(house => (
-                          <option key={house.id} value={house.id}>
+                          <option key={house.id} value={house.id} style={{ background: '#1a1a2e', color: 'white' }}>
                             🏠 {house.name}
                           </option>
                         ))}
