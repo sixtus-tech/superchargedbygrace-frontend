@@ -262,16 +262,7 @@ function AdminDashboard() {
       doc.setFontSize(10);
       doc.setTextColor(60);
       
-      let summaryY = 85;
-      if (totalDays > 0) {
-        doc.text(`Total Days: ${totalDays}`, 25, summaryY);
-        summaryY += 8;
-      }
-      if (totalHours > 0) {
-        doc.text(`Total Hours: ${totalHours}`, 25, summaryY);
-        summaryY += 8;
-      }
-      doc.text(`Total Entries: ${filteredTimesheets.length}`, 25, summaryY);
+      doc.text(`Total Entries: ${filteredTimesheets.length}`, 25, 85);
 
       doc.setLineWidth(0.5);
       doc.line(25, 103, 185, 103);
