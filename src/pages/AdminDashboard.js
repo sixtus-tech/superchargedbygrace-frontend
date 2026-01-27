@@ -179,10 +179,13 @@ function AdminDashboard() {
         return;
       }
 
-      // Get house name for title
-      const selectedHouseName = selectedHouse !== 'all' 
-        ? houses.find(h => h.id === parseInt(selectedHouse))?.name 
-        : 'All Houses';
+      // Get house info for invoice style
+      const selectedHouseObj = selectedHouse !== 'all' 
+        ? houses.find(h => h.id === parseInt(selectedHouse))
+        : null;
+      
+      const selectedHouseName = selectedHouseObj?.name || 'All Houses';
+      const invoiceStyle = selectedHouseObj?.invoice_style || 'grouped';
 
       // Group by employee
       const employeeGroups = {};
@@ -195,9 +198,19 @@ function AdminDashboard() {
           employeeGroups[ts.employee_name] = {
             days: 0,
             hours: 0,
-            total: 0
+            total: 0,
+            entries: [] // Store individual entries for daily style
           };
         }
+        
+        // Store entry details
+        employeeGroups[ts.employee_name].entries.push({
+          date: ts.date,
+          type: ts.entry_type,
+          value: ts.entry_type === 'days' ? ts.hours / 8 : ts.hours,
+          charge: ts.client_charge
+        });
+        
         if (ts.entry_type === 'days') {
           employeeGroups[ts.employee_name].days += ts.hours / 8;
           totalDays += ts.hours / 8;
@@ -284,28 +297,51 @@ function AdminDashboard() {
           yPos = 20;
         }
 
-        doc.setDrawColor(224, 224, 224);
-        doc.setFillColor(255, 255, 255);
-        doc.rect(20, yPos - 5, 170, 25, 'FD');
-
+        // Employee name header
         doc.setFont(undefined, 'bold');
         doc.text(employeeName, 25, yPos);
         doc.setFont(undefined, 'normal');
-
         yPos += 7;
-        if (empData.days > 0) {
-          doc.text(`${empData.days} day${empData.days !== 1 ? 's' : ''}`, 30, yPos);
-          yPos += 6;
-        }
-        if (empData.hours > 0) {
-          doc.text(`${empData.hours} hour${empData.hours !== 1 ? 's' : ''}`, 30, yPos);
-          yPos += 6;
-        }
-        doc.setFont(undefined, 'bold');
-        doc.text(`Subtotal: $${empData.total.toFixed(2)}`, 30, yPos);
-        doc.setFont(undefined, 'normal');
 
-        yPos += 12;
+        // Check invoice style
+        if (invoiceStyle === 'daily') {
+          // DAILY STYLE: Show each date individually
+          // Sort entries by date
+          empData.entries.sort((a, b) => new Date(a.date) - new Date(b.date));
+          
+          empData.entries.forEach(entry => {
+            if (yPos > 270) {
+              doc.addPage();
+              yPos = 20;
+            }
+            
+            const dateStr = new Date(entry.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+            
+            doc.text(`  ${dateStr}`, 30, yPos);
+            yPos += 6;
+          });
+          
+          // Subtotal after all dates
+          doc.setFont(undefined, 'bold');
+          doc.text(`  Subtotal: $${empData.total.toFixed(2)}`, 30, yPos);
+          doc.setFont(undefined, 'normal');
+          yPos += 12;
+          
+        } else {
+          // GROUPED STYLE: Show totals only (existing behavior)
+          if (empData.days > 0) {
+            doc.text(`  ${empData.days} day${empData.days !== 1 ? 's' : ''}`, 30, yPos);
+            yPos += 6;
+          }
+          if (empData.hours > 0) {
+            doc.text(`  ${empData.hours} hour${empData.hours !== 1 ? 's' : ''}`, 30, yPos);
+            yPos += 6;
+          }
+          doc.setFont(undefined, 'bold');
+          doc.text(`  Subtotal: $${empData.total.toFixed(2)}`, 30, yPos);
+          doc.setFont(undefined, 'normal');
+          yPos += 12;
+        }
       });
 
       // Footer
