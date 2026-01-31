@@ -46,10 +46,17 @@ function AdminDashboard() {
         const lastDay = new Date(year, month, 0).getDate();
         params.endDate = `${year}-${month}-${lastDay}`;
       } else if (periodType === 'weekly' && weekStart) {
-        const end = new Date(weekStart);
-        end.setDate(end.getDate() + 6); // 7 days
-        params.startDate = weekStart;
-        params.endDate = end.toISOString().split('T')[0];
+        // Find the Sunday of the selected week
+        const selectedDate = new Date(weekStart);
+        const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const sunday = new Date(selectedDate);
+        sunday.setDate(selectedDate.getDate() - dayOfWeek); // Go back to Sunday
+        
+        const saturday = new Date(sunday);
+        saturday.setDate(sunday.getDate() + 6); // Saturday is 6 days after Sunday
+        
+        params.startDate = sunday.toISOString().split('T')[0];
+        params.endDate = saturday.toISOString().split('T')[0];
       } else if (periodType === 'biweekly' && biweekStart) {
         const end = new Date(biweekStart);
         end.setDate(end.getDate() + 13); // 14 days
@@ -179,10 +186,16 @@ function AdminDashboard() {
         const lastDay = new Date(year, month, 0).getDate();
         params.endDate = `${year}-${month}-${lastDay}`;
       } else if (periodType === 'weekly' && weekStart) {
-        const end = new Date(weekStart);
-        end.setDate(end.getDate() + 6);
-        params.startDate = weekStart;
-        params.endDate = end.toISOString().split('T')[0];
+        const selectedDate = new Date(weekStart);
+        const dayOfWeek = selectedDate.getDay();
+        const sunday = new Date(selectedDate);
+        sunday.setDate(selectedDate.getDate() - dayOfWeek);
+        
+        const saturday = new Date(sunday);
+        saturday.setDate(sunday.getDate() + 6);
+        
+        params.startDate = sunday.toISOString().split('T')[0];
+        params.endDate = saturday.toISOString().split('T')[0];
       } else if (periodType === 'biweekly' && biweekStart) {
         const end = new Date(biweekStart);
         end.setDate(end.getDate() + 13);
@@ -272,9 +285,15 @@ function AdminDashboard() {
         const monthName = new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
         doc.text(`Period: ${monthName}`, 20, 57);
       } else if (periodType === 'weekly' && weekStart) {
-        const end = new Date(weekStart);
-        end.setDate(end.getDate() + 6);
-        doc.text(`Period: ${new Date(weekStart).toLocaleDateString()} - ${end.toLocaleDateString()}`, 20, 57);
+        const selectedDate = new Date(weekStart);
+        const dayOfWeek = selectedDate.getDay();
+        const sunday = new Date(selectedDate);
+        sunday.setDate(selectedDate.getDate() - dayOfWeek);
+        
+        const saturday = new Date(sunday);
+        saturday.setDate(sunday.getDate() + 6);
+        
+        doc.text(`Period: ${sunday.toLocaleDateString()} - ${saturday.toLocaleDateString()}`, 20, 57);
       } else if (periodType === 'biweekly' && biweekStart) {
         const end = new Date(biweekStart);
         end.setDate(end.getDate() + 13);
@@ -408,10 +427,16 @@ function AdminDashboard() {
         const lastDay = new Date(year, month, 0).getDate();
         params.endDate = `${year}-${month}-${lastDay}`;
       } else if (periodType === 'weekly' && weekStart) {
-        const end = new Date(weekStart);
-        end.setDate(end.getDate() + 6);
-        params.startDate = weekStart;
-        params.endDate = end.toISOString().split('T')[0];
+        const selectedDate = new Date(weekStart);
+        const dayOfWeek = selectedDate.getDay();
+        const sunday = new Date(selectedDate);
+        sunday.setDate(selectedDate.getDate() - dayOfWeek);
+        
+        const saturday = new Date(sunday);
+        saturday.setDate(sunday.getDate() + 6);
+        
+        params.startDate = sunday.toISOString().split('T')[0];
+        params.endDate = saturday.toISOString().split('T')[0];
       } else if (periodType === 'biweekly' && biweekStart) {
         const end = new Date(biweekStart);
         end.setDate(end.getDate() + 13);
