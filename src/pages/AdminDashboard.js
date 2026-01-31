@@ -12,6 +12,9 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState('all');
+  const [periodType, setPeriodType] = useState('all'); // all, monthly, weekly, biweekly
+  const [weekStart, setWeekStart] = useState('');
+  const [biweekStart, setBiweekStart] = useState('');
   const [selectedHouse, setSelectedHouse] = useState('all');
   const [activeTab, setActiveTab] = useState('timesheets');
   
@@ -36,11 +39,24 @@ function AdminDashboard() {
   const loadData = useCallback(async () => {
     try {
       const params = {};
-      if (selectedMonth !== 'all') {
+      
+      if (periodType === 'monthly' && selectedMonth !== 'all') {
         const [year, month] = selectedMonth.split('-');
         params.startDate = `${year}-${month}-01`;
         const lastDay = new Date(year, month, 0).getDate();
         params.endDate = `${year}-${month}-${lastDay}`;
+      } else if (periodType === 'weekly' && weekStart) {
+        const start = new Date(weekStart);
+        const end = new Date(weekStart);
+        end.setDate(end.getDate() + 6); // 7 days
+        params.startDate = weekStart;
+        params.endDate = end.toISOString().split('T')[0];
+      } else if (periodType === 'biweekly' && biweekStart) {
+        const start = new Date(biweekStart);
+        const end = new Date(biweekStart);
+        end.setDate(end.getDate() + 13); // 14 days
+        params.startDate = biweekStart;
+        params.endDate = end.toISOString().split('T')[0];
       }
 
       const [timesheetsRes, employeesRes, statsRes, housesRes] = await Promise.all([
@@ -58,7 +74,7 @@ function AdminDashboard() {
       showNotification('Error loading data: ' + error.message, 'error');
     }
     setLoading(false);
-  }, [selectedMonth]);
+  }, [selectedMonth, periodType, weekStart, biweekStart]);
 
   useEffect(() => {
     loadData();
@@ -158,11 +174,22 @@ function AdminDashboard() {
       showNotification('Generating PDF...', 'info');
       
       const params = {};
-      if (selectedMonth !== 'all') {
+
+      if (periodType === 'monthly' && selectedMonth !== 'all') {
         const [year, month] = selectedMonth.split('-');
         params.startDate = `${year}-${month}-01`;
         const lastDay = new Date(year, month, 0).getDate();
         params.endDate = `${year}-${month}-${lastDay}`;
+      } else if (periodType === 'weekly' && weekStart) {
+        const end = new Date(weekStart);
+        end.setDate(end.getDate() + 6);
+        params.startDate = weekStart;
+        params.endDate = end.toISOString().split('T')[0];
+      } else if (periodType === 'biweekly' && biweekStart) {
+        const end = new Date(biweekStart);
+        end.setDate(end.getDate() + 13);
+        params.startDate = biweekStart;
+        params.endDate = end.toISOString().split('T')[0];
       }
 
       // Get timesheets
@@ -241,10 +268,19 @@ function AdminDashboard() {
       doc.setFontSize(10);
       doc.setTextColor(60);
       doc.text(`Invoice Date: ${new Date().toLocaleDateString()}`, 20, 50);
-      if (selectedMonth !== 'all') {
+      
+      if (periodType === 'monthly' && selectedMonth !== 'all') {
         const [year, month] = selectedMonth.split('-');
         const monthName = new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
         doc.text(`Period: ${monthName}`, 20, 57);
+      } else if (periodType === 'weekly' && weekStart) {
+        const end = new Date(weekStart);
+        end.setDate(end.getDate() + 6);
+        doc.text(`Period: ${new Date(weekStart).toLocaleDateString()} - ${end.toLocaleDateString()}`, 20, 57);
+      } else if (periodType === 'biweekly' && biweekStart) {
+        const end = new Date(biweekStart);
+        end.setDate(end.getDate() + 13);
+        doc.text(`Period: ${new Date(biweekStart).toLocaleDateString()} - ${end.toLocaleDateString()}`, 20, 57);
       }
 
       // Billing Summary Box
@@ -342,9 +378,18 @@ function AdminDashboard() {
         doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
       }
 
+      let periodStr = 'all-time';
+      if (periodType === 'monthly' && selectedMonth !== 'all') {
+        periodStr = selectedMonth;
+      } else if (periodType === 'weekly' && weekStart) {
+        periodStr = `week-${weekStart}`;
+      } else if (periodType === 'biweekly' && biweekStart) {
+        periodStr = `biweek-${biweekStart}`;
+      }
+
       const filename = selectedHouse !== 'all'
-        ? `invoice-${selectedHouseName.replace(/\s+/g, '-')}-${selectedMonth}-${Date.now()}.pdf`
-        : `invoice-all-houses-${selectedMonth}-${Date.now()}.pdf`;
+        ? `invoice-${selectedHouseName.replace(/\s+/g, '-')}-${periodStr}-${Date.now()}.pdf`
+        : `invoice-all-houses-${periodStr}-${Date.now()}.pdf`;
 
       doc.save(filename);
       showNotification('Client invoice PDF downloaded!');
@@ -358,11 +403,22 @@ function AdminDashboard() {
       showNotification('Generating PDF...', 'info');
       
       const params = {};
-      if (selectedMonth !== 'all') {
+      
+      if (periodType === 'monthly' && selectedMonth !== 'all') {
         const [year, month] = selectedMonth.split('-');
         params.startDate = `${year}-${month}-01`;
         const lastDay = new Date(year, month, 0).getDate();
         params.endDate = `${year}-${month}-${lastDay}`;
+      } else if (periodType === 'weekly' && weekStart) {
+        const end = new Date(weekStart);
+        end.setDate(end.getDate() + 6);
+        params.startDate = weekStart;
+        params.endDate = end.toISOString().split('T')[0];
+      } else if (periodType === 'biweekly' && biweekStart) {
+        const end = new Date(biweekStart);
+        end.setDate(end.getDate() + 13);
+        params.startDate = biweekStart;
+        params.endDate = end.toISOString().split('T')[0];
       }
 
       const response = await invoicesAPI.getPayrollReport(params);
@@ -574,9 +630,18 @@ function AdminDashboard() {
         doc.text(`Total Payroll: $${report.summary.total_payroll}`, 105, 285, { align: 'center' });
       }
 
+      let periodStr = 'all-time';
+      if (periodType === 'monthly' && selectedMonth !== 'all') {
+        periodStr = selectedMonth;
+      } else if (periodType === 'weekly' && weekStart) {
+        periodStr = `week-${weekStart}`;
+      } else if (periodType === 'biweekly' && biweekStart) {
+        periodStr = `biweek-${biweekStart}`;
+      }
+
       const filename = selectedHouse !== 'all'
-        ? `payroll-${selectedHouseName.replace(/\s+/g, '-')}-${selectedMonth}-${Date.now()}.pdf`
-        : `payroll-all-houses-${selectedMonth}-${Date.now()}.pdf`;
+        ? `payroll-${selectedHouseName.replace(/\s+/g, '-')}-${periodStr}-${Date.now()}.pdf`
+        : `payroll-all-houses-${periodStr}-${Date.now()}.pdf`;
 
       doc.save(filename);
       showNotification('Payroll report PDF downloaded!');
@@ -752,8 +817,13 @@ function AdminDashboard() {
             {/* Filters and Actions */}
             <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap', alignItems: 'center' }}>
               <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
+                value={periodType}
+                onChange={(e) => {
+                  setPeriodType(e.target.value);
+                  setSelectedMonth('all');
+                  setWeekStart('');
+                  setBiweekStart('');
+                }}
                 style={{
                   padding: '12px 16px',
                   background: 'rgba(255,255,255,0.08)',
@@ -766,12 +836,76 @@ function AdminDashboard() {
                 }}
               >
                 <option value="all" style={{ background: '#1a1a2e', color: 'white' }}>All Time</option>
-                <option value="2026-01" style={{ background: '#1a1a2e', color: 'white' }}>January 2026</option>
-                <option value="2025-12" style={{ background: '#1a1a2e', color: 'white' }}>December 2025</option>
-                <option value="2025-11" style={{ background: '#1a1a2e', color: 'white' }}>November 2025</option>
-                <option value="2025-10" style={{ background: '#1a1a2e', color: 'white' }}>October 2025</option>
-                <option value="2025-09" style={{ background: '#1a1a2e', color: 'white' }}>September 2025</option>
+                <option value="monthly" style={{ background: '#1a1a2e', color: 'white' }}>Monthly</option>
+                <option value="weekly" style={{ background: '#1a1a2e', color: 'white' }}>Weekly</option>
+                <option value="biweekly" style={{ background: '#1a1a2e', color: 'white' }}>Bi-weekly</option>
               </select>
+
+              {periodType === 'monthly' && (
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  style={{
+                    padding: '12px 16px',
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: '10px',
+                    color: 'white',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="all" style={{ background: '#1a1a2e', color: 'white' }}>Select Month</option>
+                  <option value="2026-01" style={{ background: '#1a1a2e', color: 'white' }}>January 2026</option>
+                  <option value="2025-12" style={{ background: '#1a1a2e', color: 'white' }}>December 2025</option>
+                  <option value="2025-11" style={{ background: '#1a1a2e', color: 'white' }}>November 2025</option>
+                  <option value="2025-10" style={{ background: '#1a1a2e', color: 'white' }}>October 2025</option>
+                  <option value="2025-09" style={{ background: '#1a1a2e', color: 'white' }}>September 2025</option>
+                </select>
+              )}
+
+              {periodType === 'weekly' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)' }}>Week starting:</label>
+                  <input
+                    type="date"
+                    value={weekStart}
+                    onChange={(e) => setWeekStart(e.target.value)}
+                    style={{
+                      padding: '12px 16px',
+                      background: 'rgba(255,255,255,0.08)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: '10px',
+                      color: 'white',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: 'pointer'
+                    }}
+                  />
+                </div>
+              )}
+
+              {periodType === 'biweekly' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)' }}>Period starting:</label>
+                  <input
+                    type="date"
+                    value={biweekStart}
+                    onChange={(e) => setBiweekStart(e.target.value)}
+                    style={{
+                      padding: '12px 16px',
+                      background: 'rgba(255,255,255,0.08)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: '10px',
+                      color: 'white',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: 'pointer'
+                    }}
+                  />
+                </div>
+              )}
 
               <select
                 value={selectedHouse}
