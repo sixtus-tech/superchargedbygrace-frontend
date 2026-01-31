@@ -46,8 +46,8 @@ function AdminDashboard() {
         const lastDay = new Date(year, month, 0).getDate();
         params.endDate = `${year}-${month}-${lastDay}`;
       } else if (periodType === 'weekly' && weekStart) {
-        // Find the Sunday of the selected week
-        const selectedDate = new Date(weekStart);
+        // Parse date at noon to avoid timezone issues
+        const selectedDate = new Date(weekStart + 'T12:00:00');
         const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
         const sunday = new Date(selectedDate);
         sunday.setDate(selectedDate.getDate() - dayOfWeek); // Go back to Sunday
@@ -186,7 +186,8 @@ function AdminDashboard() {
         const lastDay = new Date(year, month, 0).getDate();
         params.endDate = `${year}-${month}-${lastDay}`;
       } else if (periodType === 'weekly' && weekStart) {
-        const selectedDate = new Date(weekStart);
+        // Parse date at noon to avoid timezone issues
+        const selectedDate = new Date(weekStart + 'T12:00:00');
         const dayOfWeek = selectedDate.getDay();
         const sunday = new Date(selectedDate);
         sunday.setDate(selectedDate.getDate() - dayOfWeek);
@@ -285,7 +286,8 @@ function AdminDashboard() {
         const monthName = new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
         doc.text(`Period: ${monthName}`, 20, 57);
       } else if (periodType === 'weekly' && weekStart) {
-        const selectedDate = new Date(weekStart);
+        // Parse date at noon to avoid timezone issues
+        const selectedDate = new Date(weekStart + 'T12:00:00');
         const dayOfWeek = selectedDate.getDay();
         const sunday = new Date(selectedDate);
         sunday.setDate(selectedDate.getDate() - dayOfWeek);
@@ -427,7 +429,8 @@ function AdminDashboard() {
         const lastDay = new Date(year, month, 0).getDate();
         params.endDate = `${year}-${month}-${lastDay}`;
       } else if (periodType === 'weekly' && weekStart) {
-        const selectedDate = new Date(weekStart);
+        // Parse date at noon to avoid timezone issues
+        const selectedDate = new Date(weekStart + 'T12:00:00');
         const dayOfWeek = selectedDate.getDay();
         const sunday = new Date(selectedDate);
         sunday.setDate(selectedDate.getDate() - dayOfWeek);
