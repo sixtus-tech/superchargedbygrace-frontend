@@ -46,13 +46,11 @@ function AdminDashboard() {
         const lastDay = new Date(year, month, 0).getDate();
         params.endDate = `${year}-${month}-${lastDay}`;
       } else if (periodType === 'weekly' && weekStart) {
-        const start = new Date(weekStart);
         const end = new Date(weekStart);
         end.setDate(end.getDate() + 6); // 7 days
         params.startDate = weekStart;
         params.endDate = end.toISOString().split('T')[0];
       } else if (periodType === 'biweekly' && biweekStart) {
-        const start = new Date(biweekStart);
         const end = new Date(biweekStart);
         end.setDate(end.getDate() + 13); // 14 days
         params.startDate = biweekStart;
